@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#176b55">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Marktplaats AI Manager</title>
+<style>
+:root{--green:#176b55;--bg:#f3f6f4;--ink:#17231f;--muted:#65736d;--line:#dce5df}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:var(--green);color:white;padding:24px 18px 20px;border-radius:0 0 22px 22px}
+header small{opacity:.85}h1{font-size:23px;margin:5px 0}header p{margin:4px 0 0;opacity:.9;font-size:14px}
+main{max-width:680px;margin:auto;padding:16px 14px 40px}.card{background:white;border:1px solid var(--line);border-radius:18px;padding:16px;margin:0 0 14px;box-shadow:0 2px 8px #153a2610}
+h2{font-size:18px;margin:0 0 12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:13px;font-weight:650;margin:10px 0 5px}
+input,textarea,select{width:100%;border:1px solid #cbd7d0;border-radius:11px;padding:12px;font:inherit;background:white;color:var(--ink)}
+textarea{min-height:88px;resize:vertical}button{border:0;border-radius:12px;padding:12px 15px;font:inherit;font-weight:700;background:var(--green);color:white;cursor:pointer}
+button.secondary{background:#e8f1ec;color:var(--green)}button.danger{background:#fff0ee;color:#a33328}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.muted{color:var(--muted);font-size:13px}.pill{display:inline-block;background:#e8f1ec;color:var(--green);padding:4px 9px;border-radius:99px;font-size:12px;font-weight:700}
+#preview{width:100%;max-height:220px;object-fit:contain;border-radius:12px;background:#f5f5f5;display:none;margin-top:8px}
+.listing{border:1px solid var(--line);border-radius:13px;padding:12px;margin-top:10px}
+.listing h3{font-size:16px;margin:0 0 5px}.listing p{white-space:pre-wrap;margin:8px 0}.listing img{width:76px;height:76px;object-fit:cover;border-radius:10px;float:right;margin-left:8px}
+#output{white-space:pre-wrap;background:#f7faf8;padding:12px;border-radius:12px;border:1px dashed #cbd7d0;min-height:90px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:4px 20px 24px}
+</style>
+</head>
+<body>
+<header>
+  <small>JOUW PERSOONLIJKE VERKOOPASSISTENT</small>
+  <h1>🤖 Marktplaats AI Manager</h1>
+  <p>Producten bijhouden • advertentieteksten voorbereiden • zelf goedkeuren</p>
+</header>
+<main>
+  <section class="card">
+    <h2>Nieuw product toevoegen</h2>
+    <label for="photo">Productfoto (optioneel)</label>
+    <input id="photo" type="file" accept="image/*">
+    <img id="preview" alt="Voorbeeld van productfoto">
+    <label for="name">Wat verkoop je? *</label>
+    <input id="name" placeholder="Bijvoorbeeld: rode kinderfiets">
+    <div class="grid">
+      <div><label for="condition">Staat *</label><select id="condition"><option value="">Kies...</option><option>Nieuw</option><option>Zo goed als nieuw</option><option>Gebruikt</option><option>Gebruikt, met gebruikssporen</option></select></div>
+      <div><label for="price">Vraagprijs (€)</label><input id="price" type="number" min="0" step="0.50" placeholder="Bijv. 25"></div>
+    </div>
+    <label for="details">Extra informatie en eventuele gebreken</label>
+    <textarea id="details" placeholder="Merk, maat, afmetingen, werking, wat zit erbij, eventuele beschadigingen..."></textarea>
+    <div class="actions"><button id="make">Maak advertentieconcept</button><button class="secondary" id="clear">Leegmaken</button></div>
+    <p class="muted">Controleer alle gegevens. De app verzint geen ontbrekende producteigenschappen.</p>
+  </section>
+
+  <section class="card" id="draftCard" hidden>
+    <h2>Advertentieconcept</h2>
+    <label for="title">Titel</label><input id="title">
+    <label for="description">Beschrijving</label><textarea id="description" style="min-height:180px"></textarea>
+    <label for="category">Voorgestelde categorie</label><input id="category" placeholder="Controleer de juiste Marktplaats-categorie">
+    <label for="draftPrice">Vraagprijs (€)</label><input id="draftPrice" type="number" min="0" step="0.50">
+    <div class="actions"><button id="approve">Goedkeuren en bewaren</button><button class="secondary" id="copy">Kopieer advertentie</button></div>
+    <p class="muted">Goedkeuren bewaart het concept in deze app; het plaatst niets op Marktplaats.</p>
+  </section>
+
+  <section class="card">
+    <h2>Mijn advertenties <span class="pill" id="count">0 / 20</span></h2>
+    <div id="items"><p class="muted">Je hebt nog geen concepten bewaard.</p></div>
+  </section>
+  <section class="card">
+    <h2>Belangrijk</h2>
+    <p class="muted">Dit is versie 1: een lokale prototype-app. Producten en foto's worden op dit apparaat opgeslagen. Er is nog geen echte AI-koppeling en geen Marktplaats-publicatiekoppeling. Automatisch plaatsen mag volgens de Marktplaatsvoorwaarden alleen met toestemming van Marktplaats (bijvoorbeeld via een API-partner). Publiceer voorlopig zelf via de gewone knop ‘Plaats advertentie’.</p>
+  </section>
+</main>
+<footer>Bewaar geen wachtwoorden of betaalgegevens in deze app. Deel je Marktplaats-inloggegevens nooit in een chat.</footer>
+<script>
+const $=id=>document.getElementById(id);
+let photoData="";
+let saved=JSON.parse(localStorage.getItem("mpai_items")||"[]");
+function render(){
+ $("count").textContent=saved.length+" / 20";
+ $("items").innerHTML="";
+ if(!saved.length){$("items").innerHTML='<p class="muted">Je hebt nog geen concepten bewaard.</p>';return}
+ saved.forEach((x,i)=>{
+  const el=document.createElement("div");el.className="listing";
+  el.innerHTML=(x.photo?'<img src="'+x.photo+'" alt="">':"")+'<h3></h3><span class="pill">Goedgekeurd concept</span><p></p><div class="actions"><button class="secondary">Kopieer</button><button class="danger">Verwijder</button></div>';
+  el.querySelector("h3").textContent=x.title;
+  el.querySelector("p").textContent="€ "+(x.price||"—")+" · "+x.condition+"\n"+x.description;
+  el.querySelectorAll("button")[0].onclick=()=>navigator.clipboard?.writeText(x.title+"\n\n"+x.description+"\n\nVraagprijs: €"+x.price);
+  el.querySelectorAll("button")[1].onclick=()=>{saved.splice(i,1);persist()};
+  $("items").appendChild(el);
+ });
+}
+function persist(){localStorage.setItem("mpai_items",JSON.stringify(saved));render()}
+$("photo").onchange=e=>{
+ const f=e.target.files[0];if(!f)return;
+ const r=new FileReader();r.onload=()=>{photoData=r.result;$("preview").src=photoData;$("preview").style.display="block"};r.readAsDataURL(f);
+};
+$("make").onclick=()=>{
+ const name=$("name").value.trim(),condition=$("condition").value,details=$("details").value.trim(),price=$("price").value;
+ if(!name||!condition){alert("Vul de productnaam en staat in.");return}
+ const title=(name+" "+condition.toLowerCase()).slice(0,60);
+ const desc="Te koop: "+name+".\n\nStaat: "+condition+"."+ (details?"\n\nExtra informatie:\n"+details:"\n\nMeer informatie volgt nog; controleer de productgegevens en vul ontbrekende details aan.")+"\n\nOphalen/verzenden: graag in overleg.";
+ $("title").value=title;$("description").value=desc;$("category").value="Nog controleren";$("draftPrice").value=price;
+ $("draftCard").hidden=false;$("draftCard").scrollIntoView({behavior:"smooth"});
+};
+$("approve").onclick=()=>{
+ if(saved.length>=20){alert("Je hebt de limiet van 20 concepten bereikt.");return}
+ const title=$("title").value.trim(),description=$("description").value.trim();
+ if(!title||!description){alert("Vul de titel en beschrijving in.");return}
+ saved.unshift({title,description,category:$("category").value,price:$("draftPrice").value,condition:$("condition").value,photo:photoData});
+ persist();alert("Concept bewaard op dit apparaat. Er is niets gepubliceerd.");$("draftCard").hidden=true;
+};
+$("copy").onclick=()=>navigator.clipboard?.writeText($("title").value+"\n\n"+$("description").value+"\n\nCategorie: "+$("category").value+"\nVraagprijs: €"+$("draftPrice").value);
+$("clear").onclick=()=>{["name","condition","price","details"].forEach(id=>$(id).value="");$("photo").value="";$("preview").style.display="none";photoData=""};
+render();
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js").catch(()=>{});
+</script>
+</body></html>
